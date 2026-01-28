@@ -90,11 +90,12 @@ export default function HomeClient() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((dish) => (
-              <div key={dish.id} className="relative">
+              <div key={dish.id} className="group relative">
                 <DishCard dish={dish} />
                 <button
                   onClick={() => onDelete(dish.id)}
-                  className="absolute right-3 top-3 rounded-lg bg-white/90 px-2 py-1 text-xs text-neutral-700 shadow-sm backdrop-blur hover:bg-white"
+                  className="absolute right-3 top-3 rounded-lg bg-white/90 px-2 py-1 text-xs text-neutral-700 shadow-sm backdrop-blur transition-opacity hover:bg-white group-hover:opacity-100 sm:opacity-0"
+                  aria-label={`Delete ${dish.title}`}
                 >
                   Delete
                 </button>
