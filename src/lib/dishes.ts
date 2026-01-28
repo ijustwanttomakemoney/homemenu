@@ -1,6 +1,8 @@
 import type { Dish } from "@/lib/types";
+import { seedDishes } from "@/lib/seed";
 
 const KEY = "homemenu.dishes.v1";
+const SEEDED_KEY = "homemenu.seeded.v1";
 
 function safeParse(json: string | null): Dish[] {
   if (!json) return [];
@@ -15,7 +17,18 @@ function safeParse(json: string | null): Dish[] {
 
 export function loadDishes(): Dish[] {
   if (typeof window === "undefined") return [];
-  return safeParse(window.localStorage.getItem(KEY));
+
+  const dishes = safeParse(window.localStorage.getItem(KEY));
+
+  // Seed demo content once for first-time users.
+  if (dishes.length === 0 && !window.localStorage.getItem(SEEDED_KEY)) {
+    const seeded = seedDishes();
+    window.localStorage.setItem(KEY, JSON.stringify(seeded));
+    window.localStorage.setItem(SEEDED_KEY, "1");
+    return seeded;
+  }
+
+  return dishes;
 }
 
 export function saveDishes(dishes: Dish[]) {
