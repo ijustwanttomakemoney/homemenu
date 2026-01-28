@@ -43,9 +43,6 @@ export default function HomeClient() {
           <h1 className="text-xl font-semibold tracking-tight text-neutral-900">
             Home Menu
           </h1>
-          <p className="text-sm text-neutral-600">
-            A simple, Notion-like gallery of what you’ve cooked.
-          </p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
