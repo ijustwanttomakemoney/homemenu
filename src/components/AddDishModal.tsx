@@ -1,13 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { Dish } from "@/lib/types";
-import { addDish, fileToDataUrl } from "@/lib/dishes";
-
-function uid() {
-  // good enough for local-only V1
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
+import { useState } from "react";
+import { createDish } from "@/app/actions";
 
 export function AddDishModal({
   open,
@@ -16,47 +10,17 @@ export function AddDishModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onCreated: (dish: Dish) => void;
+  onCreated: () => void;
 }) {
-  const [title, setTitle] = useState("");
-  const [note, setNote] = useState("");
-  const [tagsText, setTagsText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const tags = useMemo(() => {
-    return tagsText
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, [tagsText]);
-
-  async function submit() {
+  async function onSubmit(formData: FormData) {
     setError(null);
-
-    if (!title.trim()) return setError("Title is required.");
-    if (!file) return setError("Photo is required.");
-
     setBusy(true);
     try {
-      const imageDataUrl = await fileToDataUrl(file);
-      const dish: Dish = {
-        id: uid(),
-        title: title.trim(),
-        note: note.trim() || undefined,
-        tags: tags.length ? tags : undefined,
-        imageDataUrl,
-        createdAt: new Date().toISOString(),
-      };
-      addDish(dish);
-      onCreated(dish);
-
-      // reset
-      setTitle("");
-      setNote("");
-      setTagsText("");
-      setFile(null);
+      await createDish(formData);
+      onCreated();
       onClose();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong");
@@ -85,12 +49,12 @@ export function AddDishModal({
           </button>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <form className="mt-4 space-y-3" action={onSubmit}>
           <label className="block">
             <div className="mb-1 text-xs font-medium text-neutral-700">Title *</div>
             <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              name="title"
+              required
               className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
               placeholder="e.g., Spicy tomato pasta"
             />
@@ -99,21 +63,21 @@ export function AddDishModal({
           <label className="block">
             <div className="mb-1 text-xs font-medium text-neutral-700">Photo *</div>
             <input
+              name="photo"
               type="file"
               accept="image/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              required
               className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm"
             />
             <p className="mt-1 text-xs text-neutral-500">
-              Stored locally for now (we’ll move to cloud later).
+              Stored in Vercel Blob (public URL).
             </p>
           </label>
 
           <label className="block">
             <div className="mb-1 text-xs font-medium text-neutral-700">Tags (comma separated)</div>
             <input
-              value={tagsText}
-              onChange={(e) => setTagsText(e.target.value)}
+              name="tags"
               className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
               placeholder="e.g., Italian, Spicy, Vegan"
             />
@@ -122,8 +86,7 @@ export function AddDishModal({
           <label className="block">
             <div className="mb-1 text-xs font-medium text-neutral-700">Notes</div>
             <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
+              name="note"
               className="min-h-[90px] w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400"
               placeholder="What you’d tell your friends about it…"
             />
@@ -133,8 +96,13 @@ export function AddDishModal({
             <p className="text-sm text-red-600">{error}</p>
           ) : null}
 
+          {error ? (
+            <p className="text-sm text-red-600">{error}</p>
+          ) : null}
+
           <div className="flex items-center justify-end gap-2 pt-2">
             <button
+              type="button"
               onClick={onClose}
               className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-800 hover:bg-neutral-50"
               disabled={busy}
@@ -142,14 +110,14 @@ export function AddDishModal({
               Cancel
             </button>
             <button
-              onClick={submit}
+              type="submit"
               className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
               disabled={busy}
             >
               {busy ? "Adding…" : "Add dish"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

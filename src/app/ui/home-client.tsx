@@ -1,39 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { Dish } from "@/lib/types";
-import { loadDishes, removeDish, saveDishes } from "@/lib/dishes";
+import { useMemo, useState } from "react";
+import type { DishRow } from "@/lib/db";
 import { DishCard } from "@/components/DishCard";
 import { AddDishModal } from "@/components/AddDishModal";
+import { removeDishAction } from "@/app/actions";
 
-export default function HomeClient() {
-  const [dishes, setDishes] = useState<Dish[]>([]);
+export default function HomeClient({
+  initialDishes,
+  serverError,
+}: {
+  initialDishes: DishRow[];
+  serverError: string | null;
+}) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDishes(loadDishes());
-  }, []);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return dishes;
-    return dishes.filter((d) => {
+    if (!q) return initialDishes;
+    return initialDishes.filter((d) => {
       const hay = [d.title, d.note ?? "", ...(d.tags ?? [])].join(" ").toLowerCase();
       return hay.includes(q);
     });
-  }, [dishes, query]);
+  }, [initialDishes, query]);
 
-  function onDelete(id: string) {
-    removeDish(id);
-    setDishes(loadDishes());
-  }
-
-  function clearAll() {
-    if (!confirm("Clear all dishes? This only affects your local browser.")) return;
-    saveDishes([]);
-    setDishes([]);
+  async function onDelete(id: string) {
+    if (!confirm("Delete this dish?") ) return;
+    await removeDishAction(id);
   }
 
   return (
@@ -61,36 +55,35 @@ export default function HomeClient() {
             >
               Add dish
             </button>
-            {dishes.length ? (
-              <button
-                onClick={clearAll}
-                className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
-              >
-                Clear
-              </button>
-            ) : null}
           </div>
         </div>
       </header>
 
       <section className="mt-6">
+        {serverError ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <div className="font-medium">Storage not configured yet</div>
+            <div className="mt-1 text-amber-800">{serverError}</div>
+            <div className="mt-2 text-amber-800">
+              In Vercel: add <span className="font-medium">Postgres</span> + <span className="font-medium">Blob</span> to this project, then redeploy.
+            </div>
+          </div>
+        ) : null}
+
         {filtered.length === 0 ? (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center">
+          <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-8 text-center">
             <p className="text-sm text-neutral-700">
               No dishes yet. Click <span className="font-medium">Add dish</span> to
               create your first entry.
             </p>
-            <p className="mt-2 text-xs text-neutral-500">
-              Note: this version stores everything locally in your browser.
-            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((dish) => (
               <div key={dish.id} className="group relative">
                 <DishCard dish={dish} />
                 <button
-                  onClick={() => onDelete(dish.id)}
+                  onClick={() => void onDelete(dish.id)}
                   className="absolute right-3 top-3 rounded-lg bg-white/90 px-2 py-1 text-xs text-neutral-700 shadow-sm backdrop-blur transition-opacity hover:bg-white group-hover:opacity-100 sm:opacity-0"
                   aria-label={`Delete ${dish.title}`}
                 >
@@ -105,7 +98,10 @@ export default function HomeClient() {
       <AddDishModal
         open={open}
         onClose={() => setOpen(false)}
-        onCreated={(dish) => setDishes((prev) => [dish, ...prev])}
+        onCreated={() => {
+          // Server action revalidates the page; user refresh or navigate triggers update.
+          // For now, close modal and let the page refresh naturally.
+        }}
       />
     </>
   );

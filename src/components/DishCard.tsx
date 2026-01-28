@@ -1,12 +1,12 @@
-import type { Dish } from "@/lib/types";
+import type { DishRow } from "@/lib/db";
 
-export function DishCard({ dish }: { dish: Dish }) {
+export function DishCard({ dish }: { dish: DishRow }) {
   return (
     <div className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-neutral-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={dish.imageDataUrl}
+          src={dish.photo_url}
           alt={dish.title}
           className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
         />
@@ -17,7 +17,7 @@ export function DishCard({ dish }: { dish: Dish }) {
             {dish.title}
           </h3>
           <span className="shrink-0 text-xs text-neutral-400">
-            {new Date(dish.createdAt).toLocaleDateString()}
+            {new Date(dish.created_at).toLocaleDateString()}
           </span>
         </div>
         {dish.note ? (
